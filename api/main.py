@@ -1,12 +1,15 @@
 import os 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel 
 import psycopg2 
 from psycopg2.extras import RealDictCursor
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 from model.fraud_model import FraudModel
 
 app = FastAPI(title="Real-Time Fraud Detection API")
 fraud_model = FraudModel()
+prediction_counter = Counter("fraud_predictions_total", "Total fraud predictions")
+fraud_counter = Counter("fraud_predictions_flagged_total", "Predictions classified as fraud")
 
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "feature_store")
@@ -32,6 +35,10 @@ class TransactionRequest(BaseModel):
 @app.get("/health")
 def health_check(): 
     return {"status": "healthy"}
+
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 @app.post("/predict")
 def predict_fraud(tx: TransactionRequest): 
@@ -65,6 +72,9 @@ def predict_fraud(tx: TransactionRequest):
             avg_amount_24h=avg_amount_24h,
         )
         is_fraud = fraud_model.is_fraud(risk_score)
+        prediction_counter.inc()
+        if is_fraud:
+            fraud_counter.inc()
 
         return { 
             "transaction_id": tx.transaction_id, 

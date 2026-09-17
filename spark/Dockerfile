@@ -1,4 +1,4 @@
-FROM bitnami/spark:3.5.0 
+FROM apache/spark:3.5.0-python3
 
 USER root 
 WORKDIR /app 
@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY streaming_job.py .
 
-CMD ["python", "streaming_job.py"]
+CMD ["python3", "streaming_job.py"]

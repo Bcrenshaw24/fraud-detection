@@ -21,3 +21,30 @@ docker compose up --build
 ```
 
 The prediction API is available at `http://localhost:8000`.
+
+### Check the stack
+
+```powershell
+docker compose ps
+Invoke-RestMethod http://localhost:8000/health
+Invoke-RestMethod http://localhost:9090/api/v1/targets
+docker compose logs --tail=50 spark-processor
+```
+
+Send a test transaction to the model:
+
+```powershell
+$body = @{
+	transaction_id = "test_001"
+	user_id = "usr_0001"
+	amount = 100.00
+	merchant_category = "grocery"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post `
+	-Uri http://localhost:8000/predict `
+	-ContentType "application/json" `
+	-Body $body
+```
+
+Expected output includes `risk_score`, `is_fraud`, and `features_used`.

@@ -4,7 +4,7 @@ import psycopg2
 from psycopg2.extras import execute_batch
 from pyspark.sql.functions import ( 
     col, from_json, window, count, sum as _sum, avg, 
-    countDistinct, last, to_timestamp
+    approx_count_distinct, last, to_timestamp
 )
 from pyspark.sql.types import ( 
     StructType, StructField, StringType, DoubleType
@@ -59,7 +59,7 @@ features_df = (parsed_stream
                    count("transaction_id").alias("tx_count_5m"), 
                    _sum("amount").alias("total_amount_5m"), 
                    avg("amount").alias("avg_amount_24h"), 
-                   countDistinct("merchant_category").alias("unique_categories_1h"), 
+                   approx_count_distinct("merchant_category").alias("unique_categories_1h"), 
                    last("latitude").alias("last_latitude"), 
                    last("longitude").alias("last_longitude"), 
                    last("event_time").alias("last_tx_timestamp")
