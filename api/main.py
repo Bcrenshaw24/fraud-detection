@@ -3,8 +3,10 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel 
 import psycopg2 
 from psycopg2.extras import RealDictCursor
+from model.fraud_model import FraudModel
 
-app = FastAPI(titel="Real-Time Fraud Derection API")
+app = FastAPI(title="Real-Time Fraud Detection API")
+fraud_model = FraudModel()
 
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "feature_store")
@@ -50,22 +52,19 @@ def predict_fraud(tx: TransactionRequest):
 
         if not features: 
             tx_count_5m = 1 
-            total_amount_24h = tx.amount 
+            total_amount_5m = tx.amount
             avg_amount_24h = tx.amount 
         else: 
             tx_count_5m = features["tx_count_5m"]
             total_amount_5m = float(features["total_amount_5m"] or 0.0)
             avg_amount_24h = float(features["avg_amount_24h"] or 0.0)
 
-        #Filler heuristic, replace with XGBoost/RF
-        risk_score = 0.05 
-
-        if tx_count_5m > 5: 
-            risk_score += 0.40 
-        if tx.amount > (avg_amount_24h * 3.0) and avg_amount_24h > 0: 
-            risk_score += 0.45 
-
-        is_fraud = risk_score >= .70 
+        risk_score = fraud_model.predict_score(
+            amount=tx.amount,
+            tx_count_5m=tx_count_5m,
+            avg_amount_24h=avg_amount_24h,
+        )
+        is_fraud = fraud_model.is_fraud(risk_score)
 
         return { 
             "transaction_id": tx.transaction_id, 

@@ -45,7 +45,7 @@ raw_stream = (spark.readStream
               .load())
 parsed_stream = (raw_stream 
                  .selectExpr("CAST(value AS STRING) as json_payload") 
-                 .select(from_json(col("json_patload"), schema).alias("data"))
+                 .select(from_json(col("json_payload"), schema).alias("data"))
                  .select("data.*")
                  .withColumn("event_time", to_timestamp(col("timestamp")))
                  .withWatermark("event_time", "10 minutes"))
@@ -86,7 +86,6 @@ def process_batch(batch_df, batch_id):
     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     ON CONFLICT (user_id)
     DO UPDATE SET 
-    tx_count_5 = EXCLUDED.tx_count_5m, 
     tx_count_5m = EXCLUDED.tx_count_5m,
     total_amount_5m = EXCLUDED.total_amount_5m,
     avg_amount_24h = EXCLUDED.avg_amount_24h,
@@ -120,7 +119,7 @@ def process_batch(batch_df, batch_id):
         cursor.close() 
         conn.close()
 
-query = (features_df.writeSream
+query = (features_df.writeStream
          .outputMode("update")
          .foreachBatch(process_batch)
          .option("checkpointLocation", "/tmp/spark_checkpoints_fraud")

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services: 
   #-----------------------------------------------
   #1. Database & Feature Store
@@ -20,7 +18,7 @@ services:
   #2. Event Broker (Kafka)
   #-----------------------------------------------
   kafka: 
-    image: confluentinc/cp-kaka:7.5.0
+    image: confluentinc/cp-kafka:7.5.0
     container_name: kafka_broker
     ports:
       - "9092:9092"
@@ -59,7 +57,10 @@ services:
       - postgres
     environment:
       - KAFKA_SERVER=kafka:29092
-      - POSTGRES_URL=jdbc:postgresql://postgres:5432/feature_store
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=feature_store
+      - POSTGRES_USER=ml_user
+      - POSTGRES_PASSWORD=ml_password
   #-----------------------------------------------
   #5. API (Local)
   #-----------------------------------------------
@@ -71,11 +72,12 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - kafka
+      - postgres
     environment:
-      - KAFKA_SERVER=kafka:29092
-    volumes:
-      - ./api/app:/app
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=feature_store
+      - POSTGRES_USER=ml_user
+      - POSTGRES_PASSWORD=ml_password
   #-----------------------------------------------
   #6. Monitoring
   #-----------------------------------------------
@@ -87,7 +89,19 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
 
-  
+volumes:
+  postgres_data:
 
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
